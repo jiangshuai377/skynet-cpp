@@ -1,0 +1,3 @@
+return {
+    value = "config-probe",
+}
