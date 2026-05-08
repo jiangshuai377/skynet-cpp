@@ -3,6 +3,8 @@ local socket = require "socket"
 local core = require "skynet.core"
 
 local summary = {}
+local text_messages = {}
+local timer_messages = 0
 local port_base = 19291
 
 local function wait_until(label, predicate, timeout_cs)
@@ -35,6 +37,7 @@ local function run_core_cpp_units()
     assert(type(core.self()) == "number", "core.self failed")
     assert(type(core.now()) == "number", "core.now failed")
     assert(type(core.starttime()) == "number", "core.starttime failed")
+    assert(core.tostring("core-string") == "core-string", "core.tostring string failed")
     assert(type(core.mem()) == "number", "core.mem failed")
     assert(type(core.gc()) == "number", "core.gc failed")
     assert(type(core.memused()) == "number", "core.memused failed")
@@ -53,6 +56,10 @@ local function run_core_cpp_units()
     local temp = "coverage-report/unit-core-write.txt"
     assert(core.writefile(temp, "a") == true, "core.writefile create failed")
     assert(core.writefile(temp, "b", true) == true, "core.writefile append failed")
+    local text = assert(core.readfile(temp))
+    assert(text == "ab", "core.readfile content failed")
+    local missing, read_err = core.readfile("coverage-report/__missing_readfile_unit__.txt")
+    assert(missing == nil and type(read_err) == "string", "core.readfile missing failed")
 
     local h1, h2 = core.harbor(1)
     assert(h1 == 0 and h2 == 0, "core.harbor failed")
@@ -90,6 +97,48 @@ local function run_netpack_cluster_seri_units()
     skynet.trash(packed, packed_sz)
     assert(values.n >= 15 and values[2] == true and values[12] == string.rep("s", 40),
         "skynet seri round-trip failed")
+    local hash_key = { id = "table-key" }
+    local hash_payload = {
+        [true] = "bool-key",
+        [1.5] = "double-key",
+        [string.rep("K", 40)] = "long-string-key",
+        [light] = "lightuserdata-key",
+        [hash_key] = "table-key",
+    }
+    local hash_blob, hash_sz = skynet.pack(hash_payload)
+    local hash_roundtrip = skynet.unpack(hash_blob, hash_sz)
+    skynet.trash(hash_blob, hash_sz)
+    assert(hash_roundtrip[true] == "bool-key", "seri boolean hash key failed")
+    assert(hash_roundtrip[1.5] == "double-key", "seri double hash key failed")
+    assert(hash_roundtrip[string.rep("K", 40)] == "long-string-key", "seri long string hash key failed")
+    assert(hash_roundtrip[light] == "lightuserdata-key", "seri lightuserdata hash key failed")
+    local found_table_key = false
+    for k, v in pairs(hash_roundtrip) do
+        if type(k) == "table" and v == "table-key" then
+            found_table_key = true
+            break
+        end
+    end
+    assert(found_table_key, "seri table hash key failed")
+
+    local large_array = {}
+    for i = 1, 40 do
+        large_array[i] = i
+    end
+    local large_blob, large_sz = skynet.pack(large_array)
+    local large_roundtrip = skynet.unpack(large_blob, large_sz)
+    skynet.trash(large_blob, large_sz)
+    assert(#large_roundtrip == 40 and large_roundtrip[40] == 40, "large array roundtrip failed")
+
+    local short_corrupt = table.pack(skynet.unpack(string.char(36)))
+    assert(short_corrupt.n == 1 and short_corrupt[1] == nil, "corrupt short string should unpack as nil")
+    local long_corrupt = table.pack(skynet.unpack(string.char(21)))
+    assert(long_corrupt.n >= 1, "corrupt long string should not crash")
+    local double_corrupt = table.pack(skynet.unpack(string.char(66)))
+    assert(double_corrupt.n == 1 and double_corrupt[1] == 0, "corrupt double should unpack as zero")
+    local default_corrupt = table.pack(skynet.unpack(string.char(7)))
+    assert(default_corrupt.n == 1 and default_corrupt[1] == nil, "corrupt unknown type should unpack as nil")
+
     local deep = {}
     local cursor = deep
     for _ = 1, 34 do
@@ -120,6 +169,13 @@ local function run_netpack_cluster_seri_units()
     local rs, rok, rtotal, rpadding = cluster.unpackresponse(resp_table[1]:sub(3))
     assert(rs == 9 and rok == true and rtotal == #big and rpadding == true,
         "cluster multipart response begin failed")
+    local nil_response = cluster.packresponse(13, true, nil)
+    local nil_session, nil_ok, nil_data = cluster.unpackresponse(nil_response:sub(3))
+    assert(nil_session == 13 and nil_ok == true and nil_data == "", "cluster nil response mismatch")
+    local part_session, part_ok, part_data, part_padding =
+        cluster.unpackresponse(string.char(99, 0, 0, 0, 3) .. "part")
+    assert(part_session == 99 and part_ok == true and part_data == "part" and part_padding == true,
+        "cluster partial response mismatch")
     local err_resp = cluster.packresponse(10, false, big)
     local es, eok, edata = cluster.unpackresponse(err_resp:sub(3))
     assert(es == 10 and eok == false and #edata == 0x8000, "cluster error truncation failed")
@@ -138,6 +194,24 @@ local function run_netpack_cluster_seri_units()
     local combined, combined_sz = cluster.concat(parts)
     assert(combined_sz == 3 + #encoded_append and combined == "abc" .. encoded_append,
         "cluster concat lightuserdata failed")
+    local cont_addr, cont_session, cont_msg, cont_sz, cont_padding =
+        cluster.unpackrequest(string.char(2, 7, 0, 0, 0) .. "mid")
+    assert(cont_addr == false and cont_session == 7 and cont_msg == "mid" and cont_sz == 3 and cont_padding == true,
+        "cluster request continuation mismatch")
+    assert(cluster.isname("@node") == true, "cluster.isname should accept @ names")
+    assert(cluster.isname("node") == nil and cluster.isname(123) == nil,
+        "cluster.isname should reject non-names")
+    assert(type(cluster.nodename()) == "string" and #cluster.nodename() > 0,
+        "cluster.nodename should return node name")
+    assert(not pcall(cluster.header, {}), "cluster.header should reject non-string packages")
+    assert(not pcall(cluster.packrequest, 1, "addr", {}), "cluster.packrequest should reject unsupported payload")
+    assert(not pcall(cluster.packresponse, 1, true, {}), "cluster.packresponse should reject unsupported payload")
+    assert(not pcall(cluster.unpackrequest, string.char(0)), "cluster.unpackrequest should reject short numeric package")
+    local concat_bad = { 4, "a", "b" }
+    assert(cluster.concat(concat_bad) == nil, "cluster.concat should reject mismatched total")
+    local append_nil = { 0 }
+    cluster.append(append_nil, nil)
+    assert(append_nil[1] == 0, "cluster.append nil payload should not change total")
     assert(cluster.concat({ "bad" }) == nil, "cluster concat bad table failed")
     assert(not pcall(cluster.append, {}, {}), "cluster append invalid type should fail")
     assert(not pcall(cluster.packrequest, "bad", 0, "x"), "cluster invalid session should fail")
@@ -153,6 +227,10 @@ local function run_profile_units()
     assert(not pcall(profile.start), "profile double start should fail")
     local elapsed = profile.stop()
     assert(type(elapsed) == "number", "profile.stop failed")
+    assert(not pcall(profile.start, {}), "profile.start should reject non-coroutine")
+    assert(not pcall(profile.stop, {}), "profile.stop should reject non-coroutine")
+    assert(not pcall(profile.resume, {}), "profile.resume should reject non-coroutine")
+    assert(not pcall(profile.wrap, {}), "profile.wrap should reject non-function")
 
     local co = coroutine.create(function(v)
         coroutine.yield("yielded", v)
@@ -178,6 +256,12 @@ local function run_profile_units()
         error("profile wrapped boom")
     end)
     assert(not pcall(wrapped_bad), "profile.wrap error should fail")
+
+    local co2 = coroutine.create(function(a, b)
+        return a, b, a + b
+    end)
+    local ok2, a, b, sum = profile.resume(co2, 2, 3)
+    assert(ok2 == true and a == 2 and b == 3 and sum == 5, "profile.resume multiple return failed")
 end
 
 local function run_skynet_api_units()
@@ -186,8 +270,17 @@ local function run_skynet_api_units()
     assert(type(skynet.mem()) == "number", "skynet.mem failed")
     assert(type(skynet.gc()) == "number", "skynet.gc failed")
     assert(type(skynet.starttime()) == "number", "skynet.starttime failed")
+    local system_stat = skynet.systemstat()
+    assert(type(system_stat) == "table", "skynet.systemstat table failed")
+    assert(type(system_stat.actor_count) == "number", "skynet.systemstat actor_count failed")
+    assert(type(system_stat.worker_count) == "number", "skynet.systemstat worker_count failed")
     assert(skynet.stat("task") >= 0, "skynet.stat task failed")
     assert(skynet.stat("mqlen") == 0, "skynet.stat default failed")
+    assert(skynet.localname(".launcher") == skynet.queryservice(".launcher"), "skynet.localname failed")
+    local packed_string = skynet.packstring("packed-string", 42)
+    local packed_values = table.pack(skynet.unpack(packed_string))
+    assert(packed_values.n == 2 and packed_values[1] == "packed-string" and packed_values[2] == 42,
+        "skynet.packstring failed")
     skynet.traceproto("lua", true)
 
     assert(not pcall(skynet.send, skynet.self(), "missing-proto"), "skynet.send bad proto should fail")
@@ -214,6 +307,48 @@ local function run_skynet_api_units()
         return woke
     end, 100)
     assert(skynet.wakeup(co) == false, "skynet.wakeup non-waiting should be false")
+
+    local waited = false
+    local wait_co
+    skynet.fork(function()
+        wait_co = coroutine.running()
+        skynet.wait()
+        waited = true
+    end)
+    wait_until("wait coroutine ready", function()
+        return wait_co ~= nil
+    end, 100)
+    assert(skynet.wakeup(wait_co) == true, "skynet.wakeup wait failed")
+    wait_until("wait wakeup", function()
+        return waited
+    end, 100)
+
+    local before_text = #text_messages
+    skynet.send(skynet.self(), "text", "text-send")
+    wait_until("text send dispatch", function()
+        return #text_messages > before_text
+    end, 100)
+    before_text = #text_messages
+    skynet.rawsend(skynet.self(), "text", 0, "text-rawsend")
+    wait_until("text rawsend dispatch", function()
+        return #text_messages > before_text
+    end, 100)
+    before_text = #text_messages
+    skynet.redirect(skynet.self(), skynet.self(), "text", 0, "text-redirect")
+    wait_until("text redirect dispatch", function()
+        return #text_messages > before_text
+    end, 100)
+    local before_timer = timer_messages
+    core.send(skynet.self(), 0, skynet.PTYPE_TIMER, 0, nil)
+    wait_until("timer protocol dispatch", function()
+        return timer_messages > before_timer
+    end, 100)
+
+    local raw_req, raw_sz = skynet.pack("echo", "raw-unit")
+    local raw_resp, raw_resp_sz = skynet.rawcall(skynet.self(), "lua", raw_req, raw_sz)
+    local raw_values = table.pack(skynet.unpack(raw_resp, raw_resp_sz))
+    skynet.trash(raw_resp, raw_resp_sz)
+    assert(raw_values.n == 1 and raw_values[1] == "raw-unit", "skynet.rawcall success failed")
 
     local tasks = {}
     skynet.task(tasks)
@@ -276,6 +411,7 @@ local function run_config_units()
     assert(parent_base ~= cwd and not parent_base:find("%.%.", 1, true),
         "relative pathbase was not normalized")
     skynet.setpathbase(cwd)
+    skynet.prependpath("tests/logic")
 
     local paths = skynet.getpath()
     assert(paths.path_base == cwd, "path snapshot missing pathbase")
@@ -289,9 +425,16 @@ local function run_config_units()
 
     skynet.appendpath("tests\\logic\\")
     skynet.appendservicepath("tests//logic//")
+    skynet.appendpath("/tmp/../tmp/unit")
     local updated = skynet.getpath()
     assert(updated.path:find("/tests/logic/%?%.lua"), "normalized lua path missing")
     assert(updated.service_path:find("/tests/logic/%?%.lua"), "normalized service path missing")
+    local preload_text = assert(skynet.readfile("tests/logic/preload.lua"))
+    assert(preload_text:find("logic preload", 1, true), "skynet.readfile failed")
+    assert(skynet.writefile("coverage-report/unit-skynet-write.txt", "w") == true,
+        "skynet.writefile failed")
+    assert(skynet.readfile("coverage-report/unit-skynet-write.txt") == "w",
+        "skynet.writefile/readfile round-trip failed")
 
     local svc = skynet.newservice("config_probe_service")
     local value, child_paths = skynet.call(svc, "lua", "probe")
@@ -304,6 +447,9 @@ end
 local function run_no_callback_units()
     local svc = skynet.newservice("no_callback")
     skynet.send(svc, "lua", "drop-payload", string.rep("x", 64))
+    local generated = core.send(svc, 0, skynet.PTYPE_TEXT, nil, "drop-text")
+    assert(type(generated) == "number" and generated > 0, "core.send generated session failed")
+    core.send(svc, 0, skynet.PTYPE_TEXT, 0, nil)
     skynet.sleep(1)
     skynet.kill(svc)
 end
@@ -328,10 +474,42 @@ local function run_launcher_units()
     assert(type(skynet.call(launcher, "lua", "MEM", 1)) == "table", "launcher MEM failed")
     assert(type(skynet.call(launcher, "lua", "STAT", 1)) == "table", "launcher STAT failed")
     assert(type(skynet.call(launcher, "lua", "GC", 1)) == "table", "launcher GC failed")
+    local ok_health, status = skynet.call(launcher, "lua", "HEALTH")
+    assert(ok_health == true and type(status) == "table", "launcher HEALTH failed")
+    local launcher_status = skynet.call(launcher, "lua", "STATUS")
+    assert(type(launcher_status) == "table" and type(launcher_status.children) == "table",
+        "launcher STATUS failed")
+    local echo_status_by_handle = skynet.call(launcher, "lua", "STATUS", echo)
+    assert(type(echo_status_by_handle) == "table" and
+        echo_status_by_handle.children[skynet.address(echo)].handle == skynet.address(echo),
+        "launcher STATUS handle failed")
+    local echo_status_by_name = skynet.call(launcher, "lua", "STATUS", "echo")
+    assert(type(echo_status_by_name) == "table" and
+        echo_status_by_name.children[skynet.address(echo)].handle == skynet.address(echo),
+        "launcher STATUS name failed")
+    local restart_hit = skynet.call(launcher, "lua", "LAUNCH", "echo")
+    local restarted_hit = skynet.call(launcher, "lua", "RESTART", restart_hit)
+    assert(type(restarted_hit) == "number" and restarted_hit ~= restart_hit,
+        "launcher RESTART handle failed")
+    skynet.sleep(5)
+    assert(skynet.call(restarted_hit, "lua", "unit-echo") == "unit-echo",
+        "launcher RESTART handle echo failed")
+    assert(skynet.call(launcher, "lua", "KILL", restarted_hit) == true,
+        "launcher KILL restarted handle failed")
+    assert(skynet.call(launcher, "lua", "STOP", echo) == true, "launcher STOP hit failed")
+    assert(skynet.call(launcher, "lua", "STOP", echo) == false, "launcher STOP miss failed")
+    local restarted = skynet.call(launcher, "lua", "RESTART", "echo")
+    assert(type(restarted) == "number", "launcher RESTART by name failed")
+    skynet.sleep(5)
+    assert(skynet.call(restarted, "lua", "unit-echo") == "unit-echo",
+        "launcher RESTART echo failed")
+    assert(skynet.call(launcher, "lua", "KILL", restarted) == true,
+        "launcher KILL restarted failed")
     assert(not pcall(skynet.newservice, "missing_service_for_unit"),
         "missing service should fail spawn")
-    assert(skynet.call(launcher, "lua", "REMOVE", echo) == true, "launcher REMOVE hit failed")
-    assert(skynet.call(launcher, "lua", "REMOVE", echo) == false, "launcher REMOVE miss failed")
+    local removable = skynet.call(launcher, "lua", "LAUNCH", "echo")
+    assert(skynet.call(launcher, "lua", "REMOVE", removable) == true, "launcher REMOVE hit failed")
+    assert(skynet.call(launcher, "lua", "REMOVE", removable) == false, "launcher REMOVE miss failed")
     local doomed = skynet.call(launcher, "lua", "LAUNCH", "echo")
     assert(skynet.call(launcher, "lua", "KILL", skynet.address(doomed)) == true, "launcher KILL string failed")
     assert(skynet.call(launcher, "lua", "KILL", doomed) == false, "launcher KILL miss failed")
@@ -357,9 +535,22 @@ local function run_sharedata_units()
     assert(type(service) == "number", "sharedatad service missing")
     assert(skynet.call(service, "lua", "__test") == true, "sharedatad selftest failed")
 
+    local string_name = "unit_sharedata_string"
+    sharedata.new(string_name, "{ version = 1, value = 'string' }")
+    assert(sharedata.query(string_name).value == "string", "sharedata string new failed")
+    local missing_data, missing_version = skynet.call(service, "lua", "monitor", "__missing_unit_sharedata__", 1)
+    assert(missing_data == nil and missing_version == nil, "sharedatad missing monitor failed")
+    local immediate_data, immediate_version = skynet.call(service, "lua", "monitor", name, 0)
+    assert(type(immediate_data) == "table" and immediate_version == 2,
+        "sharedatad immediate monitor failed")
+    sharedata.update(name, { version = 3, nested = { value = "c" } })
+    skynet.sleep(2)
+    assert(sharedata.query(name).version == 3 and sharedata.query(name).nested.value == "c",
+        "sharedata table update failed")
+
     local monitor_done = false
     skynet.fork(function()
-        local data, version = skynet.call(service, "lua", "monitor", name, 2)
+        local data, version = skynet.call(service, "lua", "monitor", name, 3)
         assert(data == nil and version == nil, "sharedatad delete monitor failed")
         monitor_done = true
     end)
@@ -368,6 +559,7 @@ local function run_sharedata_units()
     wait_until("sharedata delete monitor", function()
         return monitor_done
     end, 200)
+    sharedata.delete(string_name)
     sharedata.flush()
 end
 
@@ -446,6 +638,26 @@ local function run_coverage_units()
 end
 
 skynet.start(function()
+    skynet.register_protocol {
+        name = "timer_unit",
+        id = skynet.PTYPE_TIMER,
+        pack = function()
+            return nil
+        end,
+        unpack = function()
+            return "timer-unit"
+        end,
+    }
+
+    skynet.dispatch("text", function(session, source, text)
+        text_messages[#text_messages + 1] = text
+    end)
+
+    skynet.dispatch("timer_unit", function(session, source, value)
+        assert(value == "timer-unit", "timer protocol unpack failed")
+        timer_messages = timer_messages + 1
+    end)
+
     skynet.dispatch("lua", function(session, source, cmd, ...)
         if cmd == "echo" then
             skynet.retpack(...)

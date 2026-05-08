@@ -36,6 +36,20 @@ function Run-Checked($argv) {
     }
 }
 
+function Wait-Or-Stop-Process($process, $state, $label, $graceSeconds = 30) {
+    if (-not $process -or $process.HasExited) {
+        return
+    }
+    if ($state -eq "PASS") {
+        if (-not $process.WaitForExit($graceSeconds * 1000)) {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            throw "$label passed but did not exit within $graceSeconds seconds"
+        }
+        return
+    }
+    Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+}
+
 $repo = Normalize-PathText (Resolve-Path ".")
 if ($CppThreshold -ge 0) {
     if ($Gate -eq "Full") {
@@ -146,9 +160,7 @@ while ((Get-Date) -lt $deadline) {
         break
     }
 }
-if (-not $p.HasExited) {
-    Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
-}
+Wait-Or-Stop-Process $p $state "Stress suite"
 
 Get-Content $out -ErrorAction SilentlyContinue
 Get-Content $err -ErrorAction SilentlyContinue
@@ -186,9 +198,7 @@ if ($Gate -eq "Full" -or $Gate -eq "Both" -or $Gate -eq "ReportOnly") {
             break
         }
     }
-    if (-not $unitProcess.HasExited) {
-        Stop-Process -Id $unitProcess.Id -Force -ErrorAction SilentlyContinue
-    }
+    Wait-Or-Stop-Process $unitProcess $unitState "Unit coverage suite"
 
     Get-Content $unitOut -ErrorAction SilentlyContinue
     Get-Content $unitErr -ErrorAction SilentlyContinue
@@ -250,8 +260,9 @@ function New-CoverageSummary($rows) {
 }
 
 function Get-CppCoverageRows($include) {
-    $rows = @()
-    foreach ($file in $cov.data[0].files) {
+    $bestByFile = @{}
+    foreach ($data in $cov.data) {
+    foreach ($file in $data.files) {
         $name = $file.filename.Replace('\', '/')
         if (-not $name.StartsWith("$repo/")) {
             continue
@@ -263,14 +274,19 @@ function Get-CppCoverageRows($include) {
         $count = [int]$file.summary.lines.count
         $covered = [int]$file.summary.lines.covered
         $pct = if ($count -gt 0) { 100.0 * $covered / $count } else { 100.0 }
-        $rows += [pscustomobject]@{
+        $row = [pscustomobject]@{
             File = $rel
             Covered = $covered
             Lines = $count
             Percent = [math]::Round($pct, 2)
         }
+        if (-not $bestByFile.ContainsKey($rel) -or
+            $covered -gt [int]$bestByFile[$rel].Covered) {
+            $bestByFile[$rel] = $row
+        }
     }
-    return $rows
+    }
+    return @($bestByFile.Values)
 }
 
 function Get-LuaTargetFiles($scope) {

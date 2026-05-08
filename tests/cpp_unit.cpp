@@ -96,6 +96,13 @@ int main() {
         assert(platform::write_file(temp.string(), "abc", false, &error));
         assert(platform::write_file(temp.string(), "def", true, &error));
         assert(std::filesystem::file_size(temp) == 6);
+        std::string data;
+        assert(platform::read_file(temp.string(), &data, &error));
+        assert(data == "abcdef");
+        assert(!platform::read_file(
+            (std::filesystem::temp_directory_path() /
+             "__skynet_cpp_missing_unit_file__").string(),
+            &data, &error));
         std::filesystem::remove(temp);
 
     }
@@ -141,6 +148,10 @@ int main() {
         assert(paths.cpath.find("native/?.dll") != std::string::npos);
         assert(paths.cpath.find("native/?.so") != std::string::npos);
         assert(paths.service_path.find("svc/?.lua") != std::string::npos);
+        auto stats = zero_workers.stats();
+        assert(stats.actor_count == 0);
+        assert(stats.worker_count >= 1);
+        assert(stats.queued_messages == 0);
         zero_workers.error(0, "unit stderr path %d", 1);
         zero_workers.kill(9999);
         zero_workers.shutdown();
@@ -214,6 +225,9 @@ int main() {
     uint32_t actor = system.spawn<UnitActor>("unit");
     assert(actor != 0);
     assert(system.actor_count() == 2);
+    auto initial_stats = system.stats();
+    assert(initial_stats.actor_count == 2);
+    assert(initial_stats.worker_count == 1);
     system.register_name("unit-actor", actor);
     assert(system.find_name("unit-actor") == actor);
     system.error(actor, "unit logger path %d", 2);
@@ -231,6 +245,9 @@ int main() {
     for (size_t i = 0; i < ActorSystem::OVERLOAD_THRESHOLD; ++i) {
         system.send(actor, overloaded, PTYPE_TEXT, 0, std::string("overload"));
     }
+    auto queued_stats = system.stats();
+    assert(queued_stats.actor_count >= 4);
+    assert(queued_stats.queued_messages >= ActorSystem::OVERLOAD_THRESHOLD);
     uint32_t slow = system.spawn<SlowActor>("");
     system.send(actor, slow, PTYPE_TEXT, 0, std::string("slow"));
 
