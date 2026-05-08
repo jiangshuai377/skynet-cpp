@@ -158,6 +158,11 @@ These APIs are normally called from the preload script. Each argument is a plain
 - `skynet.appendcpath(path)` — Append a C module directory, expanded to the platform `.dll` or `.so` search pattern.
 - `skynet.appendservicepath(path)` — Append a service script directory, expanded to `path/?.lua`.
 - `skynet.getpath()` — Return the current `{ path, cpath, service_path }` snapshot.
+- `skynet.getcwd()` — Return the process current working directory for preload logging and path debugging.
+- `skynet.setpathbase(path)` — Set the relative base used by path APIs without changing the OS cwd.
+- `skynet.getpathbase()` — Return the current pathbase.
+- `skynet.readfile(path)` / `skynet.writefile(path, data, append)` — Controlled file read/write helpers that resolve paths from pathbase.
+- `skynet.systemstat()` — Return process-level runtime stats such as actor count, global queue backlog, and worker count.
 
 ---
 

@@ -3,6 +3,8 @@
 
 当前实现已经迁移到 preload 驱动的启动链路：C++ 入口只读取 `SKYNET_THREAD` 和 `SKYNET_PRELOAD`，默认 preload 为 `examples/preload.lua`；launcher、Lua path/cpath/service path 和业务入口都由 preload 显式配置。`skynet.appendpath`、`skynet.prependpath`、`skynet.appendcpath`、`skynet.appendservicepath`、`skynet.getpath` 提供全局 Lua 路径快照，新创建的 LuaActor 会继承该配置。
 
+发布模型已经改为 install/package 友好：二进制不再包含源码根目录，安装树使用 `bin/`、`lualib/`、`service/`、`examples/`、`doc/` 布局。preload 可以通过 `skynet.getcwd()` 打印进程 cwd，通过 `skynet.setpathbase(path)` / `skynet.getpathbase()` 管理相对搜索路径基准；`skynet.readfile` / `skynet.writefile` 按 pathbase 解析业务文件，不打开 Lua `io` 库。
+
 核心调度已改为 `ActorQueue` 模型：registry 按 handle 分片，global queue 存 `ActorQueue`，queue 生命周期独立于 Actor owner；kill 后 queue 负责 drain/drop pending message。LuaActor callback 和 traceback 通过 registry ref 缓存，`skynet.core` C API 通过 closure upvalue 缓存当前 actor 指针，避免每条消息或每次 C API 调用反复做 registry 字符串查找。
 
 性能路径使用 `ConcurrentQueue` + atomic epoch wait/notify + sleeping worker 计数 + global queue 近似计数；8/16 线程在进入睡眠前有短暂用户态 idle spin，减少 actor RPC 场景中的 futex wakeup。测试入口已拆分为 `tests/logic`、`tests/stress`、`tests/perf` 和 coverage 工具脚本，Linux 对比通过 Docker 运行。

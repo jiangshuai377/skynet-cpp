@@ -3,6 +3,8 @@
 
 El runtime ahora usa un arranque basado en preload: la entrada C++ solo lee `SKYNET_THREAD` y `SKYNET_PRELOAD`, usa `examples/preload.lua` por defecto y deja al script preload el arranque del launcher, la configuración de Lua path/cpath/service path y la selección de la entrada de la aplicación. `skynet.appendpath`, `skynet.prependpath`, `skynet.appendcpath`, `skynet.appendservicepath` y `skynet.getpath` gestionan el snapshot global de rutas heredado por nuevos LuaActors.
 
+El modelo de release ahora es apto para install/package: el ejecutable ya no contiene la raíz de código fuente y el árbol instalado usa `bin/`, `lualib/`, `service/`, `examples/` y `doc/`. Un preload puede imprimir el cwd con `skynet.getcwd()`, administrar la base de rutas relativas con `skynet.setpathbase(path)` / `skynet.getpathbase()` y usar `skynet.readfile` / `skynet.writefile` para archivos de negocio relativos al pathbase sin abrir la biblioteca Lua `io`.
+
 El scheduler usa ahora el modelo `ActorQueue`: el registro de actores está particionado por handle, la cola global almacena objetos `ActorQueue` y la vida de la cola es independiente del owner Actor. Después de `kill`, la cola drena o descarta mensajes pendientes de forma segura. LuaActor cachea callback y traceback como registry refs, y las APIs C de `skynet.core` cachean el puntero del actor como closure upvalue.
 
 La ruta caliente usa `ConcurrentQueue`, atomic epoch wait/notify, conteo de workers dormidos y un contador aproximado de cola global. Los workers de 8/16 hilos hacen un breve spin en user space antes de dormir para reducir futex wakeups en cargas actor RPC. Las pruebas se separaron en `tests/logic`, `tests/stress`, `tests/perf` y runners de coverage; la comparación Linux se ejecuta con Docker.

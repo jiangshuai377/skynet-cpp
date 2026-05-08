@@ -38,6 +38,10 @@ The preload script is the only startup orchestration entrypoint. It usually:
 - Starts `launcher`.
 - Starts the application, example, logic, stress, or perf entry service.
 
+## Pathbase and Package Layout
+
+Relative `SKYNET_PRELOAD` values are resolved from the process cwd. Release packages should be launched from the install root, with `bin/`, `lualib/`, `service/`, `examples/`, and `doc/`; the default preload is `examples/preload.lua`. A preload script usually prints `skynet.getcwd()`, calls `skynet.setpathbase(".")`, and then all relative `appendpath` / `appendservicepath` / `appendcpath` inputs are resolved from `skynet.getpathbase()`. `setpathbase` does not change the OS cwd and does not affect third-party file IO.
+
 ## Thread Model
 
 | Thread | Count | Responsibility |

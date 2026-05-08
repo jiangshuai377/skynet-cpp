@@ -38,6 +38,10 @@ preload は唯一の起動オーケストレーション入口です。通常は
 - `launcher` を起動。
 - application、example、logic、stress、perf の入口 service を起動。
 
+## pathbase と package layout
+
+相対 `SKYNET_PRELOAD` は process cwd から解決されます。release package は install root から起動し、`bin/`、`lualib/`、`service/`、`examples/`、`doc/` の layout を使います。既定 preload は `examples/preload.lua` です。preload は通常 `skynet.getcwd()` を出力し、`skynet.setpathbase(".")` を呼び、その後の相対 `appendpath` / `appendservicepath` / `appendcpath` は `skynet.getpathbase()` から解決されます。`setpathbase` は OS cwd を変更せず、第三者ライブラリの file IO に影響しません。
+
 ## スレッドモデル
 
 | Thread | 数量 | 役割 |

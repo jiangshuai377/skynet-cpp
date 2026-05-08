@@ -3,6 +3,8 @@
 
 The runtime now uses a preload-driven bootstrap path: the C++ entrypoint reads only `SKYNET_THREAD` and `SKYNET_PRELOAD`, defaults to `examples/preload.lua`, and leaves launcher startup, Lua path/cpath/service path setup, and application entry selection to the preload script. `skynet.appendpath`, `skynet.prependpath`, `skynet.appendcpath`, `skynet.appendservicepath`, and `skynet.getpath` manage the global Lua path snapshot inherited by newly created LuaActors.
 
+The release model is now install/package friendly: the executable no longer embeds the source root, and the installed tree uses `bin/`, `lualib/`, `service/`, `examples/`, and `doc/`. A preload script can print the process cwd with `skynet.getcwd()`, manage relative search-path base with `skynet.setpathbase(path)` / `skynet.getpathbase()`, and use `skynet.readfile` / `skynet.writefile` for pathbase-relative business files without opening Lua's `io` library.
+
 Scheduling now uses the `ActorQueue` model: the actor registry is sharded by handle, the global queue stores `ActorQueue` objects, and queue lifetime is independent from the Actor owner. After kill, the queue drains or drops pending messages safely. LuaActor callback and traceback functions are cached as registry refs, and `skynet.core` C APIs cache the current actor pointer as closure upvalues to avoid repeated registry string lookups.
 
 The hot path uses `ConcurrentQueue`, atomic epoch wait/notify, sleeping-worker tracking, and an approximate global queue count. 8/16-thread workers briefly spin in user space before sleeping to reduce futex wakeups in actor RPC workloads. Tests are split into `tests/logic`, `tests/stress`, `tests/perf`, and coverage runners; Linux native comparison runs through Docker.

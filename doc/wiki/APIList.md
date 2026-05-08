@@ -32,6 +32,12 @@
 | `skynet.appendcpath(path)` | 追加 C module 目录，自动适配 `.dll` / `.so` |
 | `skynet.appendservicepath(path)` | 追加 service 搜索目录 |
 | `skynet.getpath()` | 返回当前全局路径快照 |
+| `skynet.getcwd()` | 返回进程当前工作目录 |
+| `skynet.setpathbase(path)` | 设置相对路径解析基准 |
+| `skynet.getpathbase()` | 返回当前 pathbase |
+| `skynet.readfile(path)` | 按 pathbase 解析并读取文件 |
+| `skynet.writefile(path, data, append)` | 按 pathbase 解析并写入文件 |
+| `skynet.systemstat()` | 返回进程级 runtime 统计 |
 
 ### 任务调度
 

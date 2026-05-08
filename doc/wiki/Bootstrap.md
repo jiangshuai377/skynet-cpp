@@ -38,6 +38,10 @@ preload 是唯一启动编排入口，通常负责：
 - 启动 `launcher`。
 - 启动业务入口、示例入口或测试入口。
 
+## pathbase 与发布包布局
+
+`SKYNET_PRELOAD` 的相对路径按进程 cwd 解析。发布包推荐从安装根目录启动，布局为 `bin/`、`lualib/`、`service/`、`examples/`、`doc/`；默认 preload 为 `examples/preload.lua`。preload 中通常先打印 `skynet.getcwd()`，再调用 `skynet.setpathbase(".")`，之后所有 `appendpath` / `appendservicepath` / `appendcpath` 的相对路径都基于 `skynet.getpathbase()` 解析。`setpathbase` 不会改变 OS cwd，也不影响第三方库自己的文件 IO。
+
 ## 线程模型
 
 | 线程 | 数量 | 职责 |

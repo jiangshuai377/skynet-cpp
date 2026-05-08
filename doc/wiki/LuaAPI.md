@@ -158,6 +158,11 @@ resp(false)                     -- 抛出异常给请求者
 - `skynet.appendcpath(path)` — 追加 C module 目录，按平台展开为 `.dll` 或 `.so` 搜索规则。
 - `skynet.appendservicepath(path)` — 追加 service 脚本目录，展开为 `path/?.lua`。
 - `skynet.getpath()` — 返回当前 `{ path, cpath, service_path }` 快照。
+- `skynet.getcwd()` — 返回进程当前工作目录，用于 preload 日志和定位路径问题。
+- `skynet.setpathbase(path)` — 设置路径 API 的相对路径解析基准，不改变 OS cwd。
+- `skynet.getpathbase()` — 返回当前 pathbase。
+- `skynet.readfile(path)` / `skynet.writefile(path, data, append)` — 按 pathbase 解析文件路径的受控文件读写接口。
+- `skynet.systemstat()` — 返回进程级 runtime 统计，如 actor 数、global queue backlog、worker 数。
 
 ---
 

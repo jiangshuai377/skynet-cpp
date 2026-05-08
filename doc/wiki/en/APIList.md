@@ -32,6 +32,12 @@ The current runtime uses the preload bootstrap path: set `SKYNET_THREAD` for wor
 | `skynet.appendcpath(path)` | Append a C module directory with platform `.dll` / `.so` expansion |
 | `skynet.appendservicepath(path)` | Append a service search directory |
 | `skynet.getpath()` | Return the current global path snapshot |
+| `skynet.getcwd()` | Return the process current working directory |
+| `skynet.setpathbase(path)` | Set the relative path resolution base |
+| `skynet.getpathbase()` | Return the current pathbase |
+| `skynet.readfile(path)` | Resolve from pathbase and read a file |
+| `skynet.writefile(path, data, append)` | Resolve from pathbase and write a file |
+| `skynet.systemstat()` | Return process-level runtime statistics |
 
 ### Task Scheduling
 

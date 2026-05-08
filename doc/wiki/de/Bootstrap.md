@@ -38,6 +38,10 @@ Preload ist der einzige Einstieg für die Start-Orchestrierung. Typische Aufgabe
 - `launcher` starten.
 - Anwendung, Beispiel, Logic-, Stress- oder Perf-Einstieg starten.
 
+## Pathbase und Paketlayout
+
+Relative `SKYNET_PRELOAD` Werte werden vom Prozess-cwd aufgelöst. Release-Pakete sollten aus dem Installationsroot gestartet werden, mit `bin/`, `lualib/`, `service/`, `examples/` und `doc/`; der Standard-Preload ist `examples/preload.lua`. Ein Preload-Skript gibt typischerweise `skynet.getcwd()` aus, ruft `skynet.setpathbase(".")` auf, und danach werden relative `appendpath` / `appendservicepath` / `appendcpath` Eingaben relativ zu `skynet.getpathbase()` aufgelöst. `setpathbase` ändert das OS-cwd nicht und beeinflusst keine Datei-IO von Drittbibliotheken.
+
 ## Thread-Modell
 
 | Thread | Anzahl | Aufgabe |

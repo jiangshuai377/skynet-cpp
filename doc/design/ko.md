@@ -3,6 +3,8 @@
 
 현재 런타임은 preload 기반 bootstrap을 사용합니다. C++ 엔트리포인트는 `SKYNET_THREAD`와 `SKYNET_PRELOAD`만 읽고, 기본 preload는 `examples/preload.lua`입니다. launcher 시작, Lua path/cpath/service path 설정, 애플리케이션 진입점 선택은 preload 스크립트가 담당합니다. `skynet.appendpath`, `skynet.prependpath`, `skynet.appendcpath`, `skynet.appendservicepath`, `skynet.getpath`는 새 LuaActor가 상속하는 전역 Lua 경로 snapshot을 관리합니다.
 
+release 모델은 install/package 친화적으로 변경되었습니다. 실행 파일에는 source root가 내장되지 않고 설치 트리는 `bin/`, `lualib/`, `service/`, `examples/`, `doc/` 구조를 사용합니다. preload는 `skynet.getcwd()`로 process cwd를 출력하고 `skynet.setpathbase(path)` / `skynet.getpathbase()`로 상대 검색 경로 기준을 관리하며, Lua `io`를 열지 않고 `skynet.readfile` / `skynet.writefile`로 pathbase 상대 업무 파일을 다룰 수 있습니다.
+
 스케줄링은 `ActorQueue` 모델로 전환되었습니다. actor registry는 handle 기준으로 shard되고, global queue는 `ActorQueue` 객체를 저장하며, queue 수명은 Actor owner와 분리됩니다. `kill` 이후 queue가 pending message를 안전하게 drain/drop합니다. LuaActor callback과 traceback은 registry ref로 캐시되고, `skynet.core` C API는 현재 actor pointer를 closure upvalue로 캐시합니다.
 
 Hot path는 `ConcurrentQueue`, atomic epoch wait/notify, sleeping worker 추적, global queue 근사 카운트를 사용합니다. 8/16 thread worker는 sleep 전에 짧은 user-space spin을 수행해 actor RPC workload의 futex wakeup을 줄입니다. 테스트 엔트리는 `tests/logic`, `tests/stress`, `tests/perf`, coverage runner로 분리되었고 Linux 비교는 Docker에서 실행됩니다.
