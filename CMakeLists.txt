@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 project(skynet-cpp LANGUAGES C CXX)
 
+include(GNUInstallDirs)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -118,3 +120,33 @@ if(SKYNET_ENABLE_COVERAGE)
     target_include_directories(skynet-cpp-unit PRIVATE src)
     target_link_libraries(skynet-cpp-unit PRIVATE asio concurrentqueue)
 endif()
+
+# ---------------------------------------------------------------------------
+# Install / package layout
+# ---------------------------------------------------------------------------
+#
+# The installed tree is intentionally runnable as-is:
+#   bin/skynet-cpp
+#   lualib/
+#   service/
+#   examples/
+#   doc/
+#
+# Runtime paths are not compiled into the executable. Launch from the install
+# root and set SKYNET_PRELOAD to a preload script relative to that cwd.
+
+install(TARGETS skynet-cpp
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(DIRECTORY lualib service examples
+    DESTINATION .
+    FILES_MATCHING PATTERN "*.lua"
+)
+
+install(DIRECTORY doc
+    DESTINATION .
+    FILES_MATCHING
+        PATTERN "*.md"
+        PATTERN "*.json"
+)

@@ -2,5 +2,9 @@ build*
 cmake-build*
 coverage-report*/
 perf-results/
+dist/
+package-results/
+soak-results/
+verify-results/
 stress-test.out
 stress-test.err
