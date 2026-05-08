@@ -1,7 +1,8 @@
 -- debug_console.lua — TCP remote debug console for skynet-cpp
 --
 -- Listens on a port for telnet/netcat connections.
--- Supports commands: help, list, mem, gc, kill, exit, start, stat, ping, inject
+-- Supports commands: help, list, mem, gc, kill, exit, start, restart, stat,
+-- status, health, shutdown, ping, inject
 --
 -- Usage: skynet.newservice("debug_console", "8000")
 --   or:  skynet.newservice("debug_console", "127.0.0.1 8000")
@@ -139,9 +140,13 @@ function COMMAND.help()
         help  = "This help message",
         list  = "List all services",
         stat  = "Dump all stats",
+        status = "Show launcher and runtime status",
+        health = "Run launcher health check",
         info  = "info address : get service information",
         exit  = "exit address : gracefully exit a service",
         kill  = "kill address : kill a service",
+        restart = "restart name|address : restart a launched service",
+        shutdown = "shutdown : stop the actor system",
         mem   = "mem : show memory status",
         gc    = "gc : force all lua services to garbage collect",
         start = "start name : launch a new lua service",
@@ -170,6 +175,15 @@ function COMMAND.stat(ti)
     return skynet.call(".launcher", "lua", "STAT", timeout(ti))
 end
 
+function COMMAND.status(address)
+    return skynet.call(".launcher", "lua", "STATUS", address)
+end
+
+function COMMAND.health()
+    local ok, status = skynet.call(".launcher", "lua", "HEALTH")
+    return { ok = ok, child_count = status and status.child_count or 0 }
+end
+
 function COMMAND.mem(ti)
     return skynet.call(".launcher", "lua", "MEM", timeout(ti))
 end
@@ -180,6 +194,14 @@ end
 
 function COMMAND.kill(address)
     return skynet.call(".launcher", "lua", "KILL", address)
+end
+
+function COMMAND.restart(address)
+    return skynet.call(".launcher", "lua", "RESTART", address)
+end
+
+function COMMAND.shutdown()
+    return skynet.call(".launcher", "lua", "SHUTDOWN")
 end
 
 function COMMAND.exit(address)
