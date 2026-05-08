@@ -67,6 +67,28 @@ bool write_file(std::string_view path, std::string_view data, bool append,
     return true;
 }
 
+bool read_file(std::string_view path, std::string* data, std::string* error) {
+    if (!data) {
+        if (error) *error = "output buffer is null";
+        return false;
+    }
+
+    std::ifstream file(std::string(path), std::ios::binary);
+    if (!file.is_open()) {
+        if (error) *error = "failed to open " + std::string(path);
+        return false;
+    }
+
+    std::ostringstream out;
+    out << file.rdbuf();
+    if (!file.good() && !file.eof()) {
+        if (error) *error = "failed to read " + std::string(path);
+        return false;
+    }
+    *data = out.str();
+    return true;
+}
+
 double profile_time_seconds() {
     static const auto origin = std::chrono::steady_clock::now();
     const auto now = std::chrono::steady_clock::now();

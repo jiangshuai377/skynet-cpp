@@ -829,6 +829,16 @@ function skynet.getpath()
     return c.getpath()
 end
 
+-- skynet.readfile(path) -- read a file relative to pathbase unless absolute
+function skynet.readfile(path)
+    return c.readfile(normalize_path(path))
+end
+
+-- skynet.writefile(path, data [, append]) -- write relative to pathbase unless absolute
+function skynet.writefile(path, data, append)
+    return c.writefile(normalize_path(path), data, append)
+end
+
 -- skynet.mem() -- Lua VM memory in KB
 function skynet.mem()
     return c.mem()
@@ -842,6 +852,11 @@ end
 -- skynet.starttime() -- process start time in centiseconds since epoch
 function skynet.starttime()
     return c.starttime()
+end
+
+-- skynet.systemstat() -- process-wide runtime statistics
+function skynet.systemstat()
+    return c.systemstat()
 end
 
 return skynet

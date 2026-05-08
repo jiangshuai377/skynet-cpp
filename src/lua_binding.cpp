@@ -339,6 +339,24 @@ static int lwritefile(lua_State* L) {
 }
 
 // ============================================================================
+// skynet.core.readfile(path) -> data or nil, error
+// ============================================================================
+
+static int lreadfile(lua_State* L) {
+    const char* path = luaL_checkstring(L, 1);
+
+    std::string data;
+    std::string error;
+    if (!platform::read_file(path, &data, &error)) {
+        lua_pushnil(L);
+        lua_pushlstring(L, error.data(), error.size());
+        return 2;
+    }
+    lua_pushlstring(L, data.data(), data.size());
+    return 1;
+}
+
+// ============================================================================
 // skynet.core.timeout(ti [, session]) -> session  (ti in centiseconds)
 // ============================================================================
 
@@ -544,6 +562,38 @@ static int lstarttime(lua_State* L) {
 }
 
 // ============================================================================
+// skynet.core.systemstat() -> table
+// ============================================================================
+
+static int lsystemstat(lua_State* L) {
+    auto* actor = get_actor(L);
+    if (!actor) return luaL_error(L, "no skynet actor context");
+
+    auto stats = actor->system().stats();
+    lua_createtable(L, 0, 9);
+
+    lua_pushboolean(L, stats.running);
+    lua_setfield(L, -2, "running");
+    lua_pushinteger(L, stats.worker_count);
+    lua_setfield(L, -2, "worker_count");
+    lua_pushinteger(L, static_cast<lua_Integer>(stats.actor_count));
+    lua_setfield(L, -2, "actor_count");
+    lua_pushinteger(L, stats.global_queue_count);
+    lua_setfield(L, -2, "global_queue_count");
+    lua_pushinteger(L, stats.sleeping_workers);
+    lua_setfield(L, -2, "sleeping_workers");
+    lua_pushinteger(L, static_cast<lua_Integer>(stats.global_queue_epoch));
+    lua_setfield(L, -2, "global_queue_epoch");
+    lua_pushinteger(L, static_cast<lua_Integer>(stats.queued_messages));
+    lua_setfield(L, -2, "queued_messages");
+    lua_pushinteger(L, static_cast<lua_Integer>(stats.active_queues));
+    lua_setfield(L, -2, "active_queues");
+    lua_pushinteger(L, static_cast<lua_Integer>(stats.releasing_queues));
+    lua_setfield(L, -2, "releasing_queues");
+    return 1;
+}
+
+// ============================================================================
 // Module registration: luaopen_skynet_core
 // ============================================================================
 
@@ -568,6 +618,7 @@ extern "C" int luaopen_skynet_core(lua_State* L) {
         {"appendservicepath", lappendservicepath},
         {"getpath",         lgetpath},
         {"writefile",       lwritefile},
+        {"readfile",        lreadfile},
         {"timeout",         ltimeout},
         {"error",           lerror},
         {"harbor",          lharbor},
@@ -585,6 +636,7 @@ extern "C" int luaopen_skynet_core(lua_State* L) {
         {"memlimit",        lmemlimit},
         {"memused",         lmemused},
         {"starttime",       lstarttime},
+        {"systemstat",      lsystemstat},
         {nullptr, nullptr}
     };
 

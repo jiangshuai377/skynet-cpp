@@ -225,6 +225,18 @@ public:
         std::string service_path;
     };
 
+    struct SystemStats {
+        bool running = false;
+        int worker_count = 0;
+        size_t actor_count = 0;
+        int global_queue_count = 0;
+        int sleeping_workers = 0;
+        uint64_t global_queue_epoch = 0;
+        size_t queued_messages = 0;
+        size_t active_queues = 0;
+        size_t releasing_queues = 0;
+    };
+
     explicit ActorSystem(int worker_count = 0);
     ~ActorSystem();
 
@@ -273,6 +285,7 @@ public:
     // -- lifecycle --
 
     size_t actor_count() const;
+    SystemStats stats() const;
     void   run();
     void   shutdown();
     bool   is_running() const {

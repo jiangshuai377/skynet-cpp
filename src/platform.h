@@ -13,6 +13,9 @@ std::string current_path();
 bool write_file(std::string_view path, std::string_view data, bool append,
                 std::string* error = nullptr);
 
+bool read_file(std::string_view path, std::string* data,
+               std::string* error = nullptr);
+
 double profile_time_seconds();
 
 std::string node_name();

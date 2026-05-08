@@ -312,6 +312,36 @@ size_t ActorSystem::actor_count() const {
     return count;
 }
 
+ActorSystem::SystemStats ActorSystem::stats() const {
+    SystemStats s;
+    s.running = running_.load(std::memory_order_relaxed);
+    s.worker_count = worker_count_;
+    s.global_queue_count = global_queue_count_.load(std::memory_order_relaxed);
+    s.sleeping_workers = sleeping_workers_.load(std::memory_order_relaxed);
+    s.global_queue_epoch = global_queue_epoch_.load(std::memory_order_relaxed);
+
+    for (const auto& shard : actor_shards_) {
+        std::shared_lock lock(shard.mutex);
+        s.actor_count += shard.queues.size();
+        for (const auto& [handle, queue] : shard.queues) {
+            (void)handle;
+            if (!queue) {
+                continue;
+            }
+            s.queued_messages += queue->mailbox_count.load(
+                std::memory_order_relaxed);
+            int state = queue->schedule_state.load(std::memory_order_relaxed);
+            if (state != 0) {
+                ++s.active_queues;
+            }
+            if (queue->releasing.load(std::memory_order_relaxed)) {
+                ++s.releasing_queues;
+            }
+        }
+    }
+    return s;
+}
+
 // -- scheduling weight -------------------------------------------------------
 //
 // Original Skynet weight system:
