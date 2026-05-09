@@ -110,10 +110,10 @@ skynet-cpp/
 │   ├── stress/                            # Stress preload, workers, and suite
 │   └── perf/                              # Performance benchmark preload and workers
 ├── tools/
-│   ├── run_coverage.ps1                   # Windows coverage gate
-│   ├── run_linux_coverage_in_docker.ps1   # Linux coverage gate via Docker
-│   ├── run_perf_benchmark.ps1             # Windows perf benchmark
-│   └── run_linux_perf_in_docker.ps1       # Linux/native comparison perf benchmark
+│   ├── run_coverage.bat                   # Windows coverage gate
+│   ├── run_linux_coverage_in_docker.bat   # Linux coverage gate via Docker
+│   ├── run_perf_benchmark.bat             # Windows perf benchmark
+│   └── run_linux_perf_in_docker.bat       # Linux/native comparison perf benchmark
 └── 3rdparty/
     ├── asio/                              # Asio standalone headers
     ├── concurrentqueue/                   # moodycamel lock-free queue
@@ -243,7 +243,7 @@ graph TB
 | **DB Drivers** | `lualib/skynet/db/{redis,mysql,mongo}.lua`, `lualib/bson.lua` | Redis RESP, MySQL wire protocol, MongoDB OP_MSG/BSON clients |
 | **Examples** | `examples/preload.lua`, `examples/main.lua`, `examples/echo.lua`, `examples/pingpong.lua` | Default preload and example services |
 | **Tests** | `tests/cpp_unit.cpp`, `tests/logic`, `tests/stress`, `tests/perf` | C++ units, logic regression suite, stress suite, and performance benchmark suite |
-| **Tools** | `tools/run_*.ps1`, `tools/run_linux_coverage.sh` | Coverage, Docker/Linux validation, Docker DB stress, and performance runners |
+| **Tools** | `tools/*.bat / tools/*.sh`, `tools/py`, `tools/python/archives` | Python stdlib runners for coverage, package, Docker/Linux validation, DB stress, and performance; offline Python is stored as Git LFS archives and extracted into ignored runtime dirs |
 
 ---
 
@@ -791,7 +791,3 @@ sequenceDiagram
 2. **Continuidade de sessão**: o emissor atribui sessão → armazena em `session_id_coroutine` → o receptor a devolve inalterada → o emissor compara e retoma a coroutine
 3. **Transferência zero-copy**: o buffer serializado é passado por ponteiro `lightuserdata`, o receptor libera após `c.unpack` via `skynet.trash`
 4. **Suspensão/retomada de coroutine**: `skynet.call` usa `coroutine.yield("SUSPEND")` para suspender, `PTYPE_RESPONSE` aciona `resume` para continuar
-
-
-
-

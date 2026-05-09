@@ -39,8 +39,12 @@ entry:
 - `tests/perf/preload.lua`
 - `tests/perf/test_perf.lua`
 - `tests/perf/perf_worker.lua`
-- `tools/run_perf_benchmark.ps1`
-- `tools/run_linux_perf_in_docker.ps1`
+- `tools/run_perf_benchmark.bat`
+- `tools/run_linux_perf_in_docker.bat`
+
+These wrappers now run through the Python stdlib tool layer. Offline Python is
+kept as Git LFS archives under `tools/python/archives/` and extracted into
+ignored runtime directories on first use.
 
 The actor-heavy profile uses:
 
@@ -1107,34 +1111,34 @@ required.
 
 Windows Debug build:
 
-```powershell
+```bat
 cmake --build build --config Debug --parallel
 ```
 
 Windows logic suite:
 
-```powershell
-$env:SKYNET_PRELOAD='tests/logic/preload.lua'
-$env:SKYNET_THREAD='8'
-.\build\Debug\skynet-cpp.exe
+```bat
+set SKYNET_PRELOAD=tests/logic/preload.lua
+set SKYNET_THREAD=8
+build\Debug\skynet-cpp.exe
 ```
 
 Windows stress suite:
 
-```powershell
-$env:SKYNET_PRELOAD='tests/stress/preload.lua'
-$env:SKYNET_THREAD='8'
-.\build\Debug\skynet-cpp.exe
+```bat
+set SKYNET_PRELOAD=tests/stress/preload.lua
+set SKYNET_THREAD=8
+build\Debug\skynet-cpp.exe
 ```
 
 Linux full perf runner:
 
-```powershell
-.\tools\run_linux_perf_in_docker.ps1 `
-  -Label linux-perf `
-  -ThreadCounts 8,16,32 `
-  -Iterations 5 `
-  -TimeoutSeconds 600
+```bat
+tools\run_linux_perf_in_docker.bat ^
+  --label linux-perf ^
+  --thread-counts 8,16,32 ^
+  --iterations 5 ^
+  --timeout-seconds 600
 ```
 
 The final actor-only comparison was run with the same Docker build pattern but
@@ -1161,4 +1165,3 @@ What did not work:
 
 Final actor-heavy throughput is at or above the 90% native target for 8, 16, and
 32 threads under the current Docker benchmark.
-

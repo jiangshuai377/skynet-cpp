@@ -110,10 +110,10 @@ skynet-cpp/
 │   ├── stress/                            # Stress preload, workers, and suite
 │   └── perf/                              # Performance benchmark preload and workers
 ├── tools/
-│   ├── run_coverage.ps1                   # Windows coverage gate
-│   ├── run_linux_coverage_in_docker.ps1   # Linux coverage gate via Docker
-│   ├── run_perf_benchmark.ps1             # Windows perf benchmark
-│   └── run_linux_perf_in_docker.ps1       # Linux/native comparison perf benchmark
+│   ├── run_coverage.bat                   # Windows coverage gate
+│   ├── run_linux_coverage_in_docker.bat   # Linux coverage gate via Docker
+│   ├── run_perf_benchmark.bat             # Windows perf benchmark
+│   └── run_linux_perf_in_docker.bat       # Linux/native comparison perf benchmark
 └── 3rdparty/
     ├── asio/                              # Asio standalone headers
     ├── concurrentqueue/                   # moodycamel lock-free queue
@@ -250,7 +250,7 @@ graph TB
 | **DB Drivers** | `lualib/skynet/db/{redis,mysql,mongo}.lua`, `lualib/bson.lua` | Redis RESP, MySQL wire protocol, MongoDB OP_MSG/BSON clients |
 | **Examples** | `examples/preload.lua`, `examples/main.lua`, `examples/echo.lua`, `examples/pingpong.lua` | Default preload and example services |
 | **Tests** | `tests/cpp_unit.cpp`, `tests/logic`, `tests/stress`, `tests/perf` | C++ units, logic regression suite, stress suite, and performance benchmark suite |
-| **Tools** | `tools/run_*.ps1`, `tools/run_linux_coverage.sh` | Coverage, Docker/Linux validation, Docker DB stress, and performance runners |
+| **Tools** | `tools/*.bat / tools/*.sh`, `tools/py`, `tools/python/archives` | Python stdlib runners for coverage, package, Docker/Linux validation, DB stress, and performance; offline Python is stored as Git LFS archives and extracted into ignored runtime dirs |
 
 ---
 
@@ -1209,7 +1209,3 @@ sequenceDiagram
 3. **제로카피 전달**: 직렬화 버퍼가 `lightuserdata` 포인터로 전달, 수신측은 `c.unpack` 후 `skynet.trash`로 해제
 4. **코루틴 중단/재개**: `skynet.call`은 `coroutine.yield("SUSPEND")`로 중단, `PTYPE_RESPONSE` 수신 후 `resume`으로 재개
 ```
-
-
-
-
