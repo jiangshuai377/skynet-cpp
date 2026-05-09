@@ -9,35 +9,36 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: Configure and run quick verification
-        shell: pwsh
-        run: ./tools/verify.ps1 -Mode Quick
+        shell: cmd
+        run: tools\verify.bat --mode Quick
 
   linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: Build and run logic suite
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends cmake ninja-build g++
-          cmake -S . -B build-linux-ci -G Ninja -DCMAKE_BUILD_TYPE=Debug
-          cmake --build build-linux-ci --parallel
-          SKYNET_THREAD=8 SKYNET_PRELOAD=tests/logic/preload.lua timeout 300 ./build-linux-ci/skynet-cpp \
-            >ci-logic.out 2>ci-logic.err || { cat ci-logic.out ci-logic.err; exit 1; }
-          cat ci-logic.out ci-logic.err
-          grep -q "PASS: unit coverage suite completed" ci-logic.out
+          bash tools/verify.sh --mode Quick --build-dir build-linux-ci
 
   coverage-smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: Run coverage smoke with zero threshold
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends cmake ninja-build clang llvm g++ python3
+          sudo apt-get install -y --no-install-recommends cmake ninja-build clang llvm g++
           bash tools/run_linux_coverage.sh --gate ReportOnly --thread-count 8 --stress-timeout-seconds 600 --unit-timeout-seconds 300

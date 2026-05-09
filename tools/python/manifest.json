@@ -1,0 +1,40 @@
+{
+  "source": "https://github.com/astral-sh/python-build-standalone",
+  "release": "20260414",
+  "python": "3.13.13",
+  "variant": "install_only",
+  "packages": [
+    {
+      "platform": "windows-x86_64",
+      "asset": "cpython-3.13.13+20260414-x86_64-pc-windows-msvc-install_only.tar.gz",
+      "archive": "archives/cpython-3.13.13+20260414-x86_64-pc-windows-msvc-install_only.tar.gz",
+      "size": 46791613,
+      "sha256": "ee0cb26453d6e025d36502d765c1639c34830355e46ab3ad31c0360bc4cd9b79",
+      "python": "runtime/windows-x86_64/python.exe"
+    },
+    {
+      "platform": "linux-x86_64",
+      "asset": "cpython-3.13.13+20260414-x86_64-unknown-linux-gnu-install_only.tar.gz",
+      "archive": "archives/cpython-3.13.13+20260414-x86_64-unknown-linux-gnu-install_only.tar.gz",
+      "size": 123319948,
+      "sha256": "e5ec3b2c5693215d153c434ac018e75511b2c4f96d2bce30468a477cb3a89d5e",
+      "python": "runtime/linux-x86_64/bin/python3"
+    },
+    {
+      "platform": "macos-x86_64",
+      "asset": "cpython-3.13.13+20260414-x86_64-apple-darwin-install_only.tar.gz",
+      "archive": "archives/cpython-3.13.13+20260414-x86_64-apple-darwin-install_only.tar.gz",
+      "size": 17794772,
+      "sha256": "540337412d2c4220e99280f741dbf45c1e3da3a39edaaab20c6ba1d53e1692ef",
+      "python": "runtime/macos-x86_64/bin/python3"
+    },
+    {
+      "platform": "macos-aarch64",
+      "asset": "cpython-3.13.13+20260414-aarch64-apple-darwin-install_only.tar.gz",
+      "archive": "archives/cpython-3.13.13+20260414-aarch64-apple-darwin-install_only.tar.gz",
+      "size": 17880965,
+      "sha256": "c652dad552122cd2e76968ec41c803f8222038169b11310dba0c85928265f5c1",
+      "python": "runtime/macos-aarch64/bin/python3"
+    }
+  ]
+}
