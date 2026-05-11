@@ -93,10 +93,10 @@ skynet-cpp/
 │   ├── stress/                            # Stress preload, workers, and suite
 │   └── perf/                              # Performance benchmark preload and workers
 ├── tools/
-│   ├── run_coverage.bat                   # Windows coverage gate
-│   ├── run_linux_coverage_in_docker.bat   # Linux coverage gate via Docker
-│   ├── run_perf_benchmark.bat             # Windows perf benchmark
-│   └── run_linux_perf_in_docker.bat       # Linux/native comparison perf benchmark
+│   ├── verify.bat                         # Runtime quick verification
+│   ├── package.bat                        # Runtime package builder
+│   ├── run_package_smoke.bat              # Runtime package smoke
+│   └── run_linux_coverage.sh              # Linux coverage smoke
 └── 3rdparty/
     ├── asio/                              # Asio standalone headers
     ├── concurrentqueue/                   # moodycamel lock-free queue
@@ -226,7 +226,7 @@ graph TB
 | **DB Drivers** | `lualib/skynet/db/{redis,mysql,mongo}.lua`, `lualib/bson.lua` | Redis RESP, MySQL wire protocol, MongoDB OP_MSG/BSON clients |
 | **Examples** | `examples/preload.lua`, `examples/main.lua`, `examples/echo.lua`, `examples/pingpong.lua` | Default preload and example services |
 | **Tests** | `tests/cpp_unit.cpp`, `tests/logic`, `tests/stress`, `tests/perf` | C++ units, logic regression suite, stress suite, and performance benchmark suite |
-| **Tools** | `tools/*.bat / tools/*.sh`, `tools/py`, `tools/python/archives` | Python stdlib runners for coverage, package, Docker/Linux validation, DB stress, and performance; offline Python is stored as Git LFS archives and extracted into ignored runtime dirs |
+| **Tools** | `tools/verify.*`, `tools/package.*`, `tools/run_package_smoke.*`, `tools/run_linux_coverage.sh` | Minimal runtime verification, package smoke, and Linux coverage smoke; full coverage, perf, Docker DB, long-run validation, and native comparison live in the parent best-practice project |
 
 ---
 

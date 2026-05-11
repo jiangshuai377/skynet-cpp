@@ -39,12 +39,11 @@ entry:
 - `tests/perf/preload.lua`
 - `tests/perf/test_perf.lua`
 - `tests/perf/perf_worker.lua`
-- `tools/run_perf_benchmark.bat`
-- `tools/run_linux_perf_in_docker.bat`
+- the parent best-practice project's perf benchmark runner
+- the parent best-practice project's Linux/native comparison runner
 
-These wrappers now run through the Python stdlib tool layer. Offline Python is
-kept as Git LFS archives under `tools/python/archives/` and extracted into
-ignored runtime directories on first use.
+The perf runners are intentionally kept outside this runtime repository so the
+runtime tree remains focused on source, tests, and minimal package validation.
 
 The actor-heavy profile uses:
 
@@ -1134,7 +1133,7 @@ build\Debug\skynet-cpp.exe
 Linux full perf runner:
 
 ```bat
-tools\run_linux_perf_in_docker.bat ^
+<best-practice-tools>\linux-native-perf-runner ^
   --label linux-perf ^
   --thread-counts 8,16,32 ^
   --iterations 5 ^

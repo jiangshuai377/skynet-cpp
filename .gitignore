@@ -1,6 +1,7 @@
 /build*
 /cmake-build*
 /coverage-report*/
+/coverage-linux-report/
 /perf-results/
 /dist/
 /package-results/
@@ -8,8 +9,6 @@
 /verify-results/
 __pycache__/
 *.pyc
-tools/python/cache/
-tools/python/downloads/
-tools/python/runtime/
+*.profraw
 stress-test.out
 stress-test.err

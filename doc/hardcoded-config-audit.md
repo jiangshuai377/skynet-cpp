@@ -14,8 +14,7 @@
 
 - Built-in Lua C modules remain preloaded in C++ because they are linked into the executable, not discovered from disk.
 - Coverage build flags remain CMake options and are not runtime configuration.
-- Python tool wrappers keep Windows-specific tool discovery for Visual Studio, CMake, Ninja, and LLVM.
-- Offline tool Python is stored as Git LFS archives under `tools/python/archives/`; first use verifies SHA256 and extracts the current platform into ignored `tools/python/runtime/`.
+- Runtime tool wrappers keep only minimal CMake build, package smoke, and Linux coverage smoke logic.
 - Linux coverage tooling remains a thin shell entrypoint run directly or through the Docker Python wrapper; tooling portability is separate from runtime portability.
 - CMake retains platform branches for Asio's Windows target version, Windows socket libraries, Linux pthread linkage, and coverage compiler requirements.
 
@@ -33,5 +32,6 @@
 
 - Static scans should not find runtime platform headers or OS calls such as `windows.h`, `unistd.h`, `_WIN32`, `localtime_s`, `localtime_r`, process IDs, or hostname calls in `src/`.
 - `network.cpp` and `network.h` should remain Asio-only and should not call system socket APIs directly.
-- Linux validation runs build, logic tests, stress tests, and coverage through `tools/run_linux_coverage_in_docker.bat`, which installs Clang/LLVM/CMake/Ninja in a temporary Ubuntu container and invokes `tools/run_linux_coverage.sh`.
+- Linux runtime coverage smoke invokes `tools/run_linux_coverage.sh` after the CI environment installs Clang/LLVM/CMake/Ninja.
+- Full coverage, performance, Docker DB stress, long-run validation, and native skynet comparison are owned by the parent best-practice project tooling.
 - Design, wiki, and performance documentation now describe the preload bootstrap path instead of the old C++-hardcoded service startup path.
