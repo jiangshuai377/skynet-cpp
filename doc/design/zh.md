@@ -7,7 +7,7 @@
 
 核心调度已改为 `ActorQueue` 模型：registry 按 handle 分片，global queue 存 `ActorQueue`，queue 生命周期独立于 Actor owner；kill 后 queue 负责 drain/drop pending message。LuaActor callback 和 traceback 通过 registry ref 缓存，`skynet.core` C API 通过 closure upvalue 缓存当前 actor 指针，避免每条消息或每次 C API 调用反复做 registry 字符串查找。
 
-性能路径使用 `ConcurrentQueue` + atomic epoch wait/notify + sleeping worker 计数 + global queue 近似计数；8/16 线程在进入睡眠前有短暂用户态 idle spin，减少 actor RPC 场景中的 futex wakeup。测试入口已拆分为 `tests/logic`、`tests/stress`、`tests/perf` 和 coverage 工具脚本，Linux 对比通过 Docker 运行。
+性能路径使用 `ConcurrentQueue` + atomic epoch wait/notify + sleeping worker 计数 + global queue 近似计数；8/16 线程在进入睡眠前有短暂用户态 idle spin，减少 actor RPC 场景中的 futex wakeup。测试入口已拆分为 `tests/logic`、`tests/stress`、`tests/perf`；runtime 仓库只保留最小 verify/package/package smoke/Linux coverage smoke，full coverage、perf、Docker DB、soak 和 native 对比由父级 `testa/tools` 管理。
 
 > **skynet-cpp** — 用现代 C++20 重新实现的 [Skynet](https://github.com/cloudwu/skynet) Actor 框架
 
@@ -239,7 +239,7 @@ graph TB
 | **Debug Console** | `lualib/skynet/debug.lua`, `service/debug_console.lua` | Debug command protocol and TCP debug console service |
 | **ShareData** | `lualib/sharedata.lua`, `service/sharedatad.lua` | Shared immutable table publication, query, cache, and update notification |
 | **Multicast** | `lualib/skynet/multicast.lua`, `service/multicastd.lua` | Publish/subscribe channel manager and client API |
-| **Coverage** | `lualib/skynet/coverage.lua` | Lua line coverage hook used only by coverage runners |
+| **Coverage** | `lualib/skynet/coverage.lua` | Lua line coverage hook enabled only during coverage runs |
 | **DB Drivers** | `lualib/skynet/db/{redis,mysql,mongo}.lua`, `lualib/bson.lua` | Redis RESP, MySQL wire protocol, MongoDB OP_MSG/BSON clients |
 | **Examples** | `examples/preload.lua`, `examples/main.lua`, `examples/echo.lua`, `examples/pingpong.lua` | Default preload and example services |
 | **Tests** | `tests/cpp_unit.cpp`, `tests/logic`, `tests/stress`, `tests/perf` | C++ units, logic regression suite, stress suite, and performance benchmark suite |

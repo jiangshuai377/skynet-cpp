@@ -7,7 +7,7 @@ release 모델은 install/package 친화적으로 변경되었습니다. 실행 
 
 스케줄링은 `ActorQueue` 모델로 전환되었습니다. actor registry는 handle 기준으로 shard되고, global queue는 `ActorQueue` 객체를 저장하며, queue 수명은 Actor owner와 분리됩니다. `kill` 이후 queue가 pending message를 안전하게 drain/drop합니다. LuaActor callback과 traceback은 registry ref로 캐시되고, `skynet.core` C API는 현재 actor pointer를 closure upvalue로 캐시합니다.
 
-Hot path는 `ConcurrentQueue`, atomic epoch wait/notify, sleeping worker 추적, global queue 근사 카운트를 사용합니다. 8/16 thread worker는 sleep 전에 짧은 user-space spin을 수행해 actor RPC workload의 futex wakeup을 줄입니다. 테스트 엔트리는 `tests/logic`, `tests/stress`, `tests/perf`, coverage runner로 분리되었고 Linux 비교는 Docker에서 실행됩니다.
+Hot path는 `ConcurrentQueue`, atomic epoch wait/notify, sleeping worker 추적, global queue 근사 카운트를 사용합니다. 8/16 thread worker는 sleep 전에 짧은 user-space spin을 수행해 actor RPC workload의 futex wakeup을 줄입니다. 테스트 엔트리는 `tests/logic`, `tests/stress`, `tests/perf`로 분리되었습니다. runtime 저장소는 최소 verify/package/package smoke/Linux coverage smoke 도구만 보관하고, full coverage, perf, Docker DB, soak, native 비교는 상위 `testa/tools` 계층에서 관리합니다.
 
 > **skynet-cpp** — 모던 C++20으로 재구현한 [Skynet](https://github.com/cloudwu/skynet) Actor 프레임워크
 
@@ -246,7 +246,7 @@ graph TB
 | **Debug Console** | `lualib/skynet/debug.lua`, `service/debug_console.lua` | Debug command protocol and TCP debug console service |
 | **ShareData** | `lualib/sharedata.lua`, `service/sharedatad.lua` | Shared immutable table publication, query, cache, and update notification |
 | **Multicast** | `lualib/skynet/multicast.lua`, `service/multicastd.lua` | Publish/subscribe channel manager and client API |
-| **Coverage** | `lualib/skynet/coverage.lua` | Lua line coverage hook used only by coverage runners |
+| **Coverage** | `lualib/skynet/coverage.lua` | Lua line coverage hook enabled only during coverage runs |
 | **DB Drivers** | `lualib/skynet/db/{redis,mysql,mongo}.lua`, `lualib/bson.lua` | Redis RESP, MySQL wire protocol, MongoDB OP_MSG/BSON clients |
 | **Examples** | `examples/preload.lua`, `examples/main.lua`, `examples/echo.lua`, `examples/pingpong.lua` | Default preload and example services |
 | **Tests** | `tests/cpp_unit.cpp`, `tests/logic`, `tests/stress`, `tests/perf` | C++ units, logic regression suite, stress suite, and performance benchmark suite |

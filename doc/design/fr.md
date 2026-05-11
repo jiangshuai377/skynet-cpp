@@ -7,7 +7,7 @@ Le modèle de release est désormais compatible install/package : l'exécutable 
 
 L'ordonnancement utilise désormais le modèle `ActorQueue` : le registre d'acteurs est shardé par handle, la file globale stocke des objets `ActorQueue`, et la durée de vie de la queue est indépendante de l'owner Actor. Après `kill`, la queue draine ou abandonne les messages en attente de façon sûre. LuaActor met en cache callback et traceback sous forme de registry refs, et les APIs C de `skynet.core` mettent en cache le pointeur d'acteur comme closure upvalue.
 
-Le hot path utilise `ConcurrentQueue`, atomic epoch wait/notify, le suivi des workers endormis et un compteur approximatif de file globale. Les workers 8/16 threads effectuent un court spin user-space avant de dormir afin de réduire les futex wakeups dans les charges actor RPC. Les tests sont séparés en `tests/logic`, `tests/stress`, `tests/perf` et runners coverage ; la comparaison Linux passe par Docker.
+Le hot path utilise `ConcurrentQueue`, atomic epoch wait/notify, le suivi des workers endormis et un compteur approximatif de file globale. Les workers 8/16 threads effectuent un court spin user-space avant de dormir afin de réduire les futex wakeups dans les charges actor RPC. Les tests sont séparés en `tests/logic`, `tests/stress` et `tests/perf` ; le dépôt runtime garde seulement les outils minimaux verify/package/package smoke/Linux coverage smoke, tandis que full coverage, perf, Docker DB, soak et comparaison native vivent dans la couche parente `testa/tools`.
 
 > **skynet-cpp** — Réimplémentation en C++20 moderne du framework Actor [Skynet](https://github.com/cloudwu/skynet)
 
@@ -246,7 +246,7 @@ graph TB
 | **Debug Console** | `lualib/skynet/debug.lua`, `service/debug_console.lua` | Debug command protocol and TCP debug console service |
 | **ShareData** | `lualib/sharedata.lua`, `service/sharedatad.lua` | Shared immutable table publication, query, cache, and update notification |
 | **Multicast** | `lualib/skynet/multicast.lua`, `service/multicastd.lua` | Publish/subscribe channel manager and client API |
-| **Coverage** | `lualib/skynet/coverage.lua` | Lua line coverage hook used only by coverage runners |
+| **Coverage** | `lualib/skynet/coverage.lua` | Lua line coverage hook enabled only during coverage runs |
 | **DB Drivers** | `lualib/skynet/db/{redis,mysql,mongo}.lua`, `lualib/bson.lua` | Redis RESP, MySQL wire protocol, MongoDB OP_MSG/BSON clients |
 | **Examples** | `examples/preload.lua`, `examples/main.lua`, `examples/echo.lua`, `examples/pingpong.lua` | Default preload and example services |
 | **Tests** | `tests/cpp_unit.cpp`, `tests/logic`, `tests/stress`, `tests/perf` | C++ units, logic regression suite, stress suite, and performance benchmark suite |

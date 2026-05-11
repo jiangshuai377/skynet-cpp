@@ -1130,10 +1130,11 @@ set SKYNET_THREAD=8
 build\Debug\skynet-cpp.exe
 ```
 
-Linux full perf runner:
+Linux full perf runner from the parent `testa/` best-practice project:
 
 ```bat
-<best-practice-tools>\linux-native-perf-runner ^
+cd ..
+tools\run_linux_perf_in_docker.bat ^
   --label linux-perf ^
   --thread-counts 8,16,32 ^
   --iterations 5 ^
